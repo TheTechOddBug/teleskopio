@@ -13,7 +13,8 @@ export const WSProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [listeners] = useState<Record<string, ((payload: any) => void)[]>>({});
 
   useEffect(() => {
-    const ws = new ReconnectingWebSocket('ws://localhost:3080/ws');
+    const wsserverurl = `${location.hostname}:${location.port}`;
+    const ws = new ReconnectingWebSocket(`ws://${wsserverurl}/ws`);
     wsRef.current = ws;
 
     ws.addEventListener('open', () => console.debug('WS connected'));

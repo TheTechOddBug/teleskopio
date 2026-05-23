@@ -54,7 +54,10 @@ type Config struct {
 	AuthDisabled bool   `yaml:"auth_disabled"`
 	JWTKey       string `yaml:"jwt_key"`
 	Users        []User `yaml:"users"`
-	Kube         struct {
+	MCP          struct {
+		Enabled bool `yaml:"enabled"`
+	} `yaml:"mcp"`
+	Kube struct {
 		APIRequestTimeout string           `yaml:"api_request_timeout"`
 		Configs           []map[string]any `yaml:"configs"`
 	} `yaml:"kube"`

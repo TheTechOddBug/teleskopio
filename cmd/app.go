@@ -98,6 +98,7 @@ func (a *App) initServer(staticFiles embed.FS) error {
 	router := gin.New()
 	mdlwr := middleware.New(a.Config)
 	router.Use(mdlwr.Logger())
+	router.Use(mdlwr.CORSMiddleware())
 	router.Use(gin.Recovery())
 	hub := webSocket.NewHub()
 	go hub.Run()
@@ -105,6 +106,19 @@ func (a *App) initServer(staticFiles embed.FS) error {
 	if err != nil {
 		return err
 	}
+
+	if a.Config.MCP.Enabled {
+		// TODO fix secure
+		// fix base url
+		mcpBaseURL := "http://" + a.Config.ServerHTTP
+		slog.Info("mcp enabled", "base", mcpBaseURL)
+
+		mcp := httpRouter.InitMCP(r)
+		for _, method := range []string{http.MethodPost, http.MethodOptions, http.MethodGet, http.MethodDelete} {
+			router.Handle(method, "/mcp", gin.WrapH(mcp.ServeHTTP()))
+		}
+	}
+
 	indexfs, err := static.EmbedFolder(staticFiles, "dist")
 	if err != nil {
 		return err
@@ -123,7 +137,7 @@ func (a *App) initServer(staticFiles embed.FS) error {
 		})
 	}
 	router.NoRoute(func(c *gin.Context) {
-		slog.Debug("hit no route", "request uri", c.Request.RequestURI)
+		slog.Debug("hit no route", "request uri", c.Request.RequestURI, "method", c.Request.Method)
 		if strings.HasPrefix(c.Request.URL.Path, "/yaml") {
 			re := regexp.MustCompile(`^(/[^/]+){3}`)
 			newPath := re.ReplaceAllString(c.Request.URL.Path, "")

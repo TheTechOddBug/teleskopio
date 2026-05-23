@@ -20,6 +20,11 @@ export default defineConfig(async () => ({
     port: 3000,
     proxy: {
       '/api': 'http://localhost:3080',
+      '/ws': {
+        target: 'ws://localhost:3080',
+        ws: true, // This is essential for WebSocket proxying
+        changeOrigin: false,
+      },
     },
   },
   // build: {

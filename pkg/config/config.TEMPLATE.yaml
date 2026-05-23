@@ -4,6 +4,8 @@ log_level: INFO # Log Level
 server_http: ":3080" # HTTP address
 jwt_key: "super-salt" # salt for JWT token  `openssl rand -hex 20`
 auth_disabled: false # set to true to disable auth completly
+mcp:
+  enabled: false
 users:
   - username: admin
     password: "" # htpasswd -nbB admin MySecret12345
