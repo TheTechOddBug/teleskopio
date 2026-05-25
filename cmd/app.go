@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"teleskopio/pkg/config"
+	"teleskopio/pkg/kubeapi"
+	"teleskopio/pkg/mcp"
 	"teleskopio/pkg/middleware"
 	httpRouter "teleskopio/pkg/router"
 	webSocket "teleskopio/pkg/socket"
@@ -102,7 +104,9 @@ func (a *App) initServer(staticFiles embed.FS) error {
 	router.Use(gin.Recovery())
 	hub := webSocket.NewHub()
 	go hub.Run()
-	r, err := httpRouter.New(hub, router, a.Config, a.Clusters, a.Users)
+
+	kapi := kubeapi.New(a.Clusters)
+	r, err := httpRouter.New(hub, a.Config, kapi, a.Users)
 	if err != nil {
 		return err
 	}
@@ -112,11 +116,9 @@ func (a *App) initServer(staticFiles embed.FS) error {
 		// fix base url
 		mcpBaseURL := "http://" + a.Config.ServerHTTP
 		slog.Info("mcp enabled", "base", mcpBaseURL)
-
-		mcp := httpRouter.InitMCP(r)
-		for _, method := range []string{http.MethodPost, http.MethodOptions, http.MethodGet, http.MethodDelete} {
-			router.Handle(method, "/mcp", gin.WrapH(mcp.ServeHTTP()))
-		}
+		mcp.LoadTools(
+			mcp.New(kapi).SetupRoutes(router),
+		)
 	}
 
 	indexfs, err := static.EmbedFolder(staticFiles, "dist")

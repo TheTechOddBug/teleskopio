@@ -168,9 +168,9 @@ func Parse(configPath string) (Config, []*Cluster, Users, error) {
 	}
 
 	if _, err := os.Open(sapath); errors.Is(err, os.ErrNotExist) {
-		slog.Info("we're not in cluster", "sa", sapath)
+		slog.Debug("we're not in the cluster", "sa", sapath)
 	} else {
-		slog.Info("looks like we're in kubernetes cluster, let's auth with SA", "sa", sapath)
+		slog.Info("looks like we're in the kubernetes cluster, let's auth with SA", "sa", sapath)
 		inclusterconfig, err := rest.InClusterConfig()
 		if err != nil {
 			slog.Error("cant auth with SA kubernetes cluster", "sa", sapath)
