@@ -151,32 +151,6 @@ func (k *KubeAPI) ListDynamicResource(ctx context.Context, req model.ListRequest
 	return list.Items, continueToken, resourceVersion, nil
 }
 
-func (k *KubeAPI) FilterPods(ctx context.Context, server string, opts metav1.ListOptions) (model.PodFilterResponse, error) {
-	result := model.PodFilterResponse{}
-
-	s, err := k.getClient(server)
-	if err != nil {
-		return result, err
-	}
-
-	pods, err := s.Typed.CoreV1().Pods(metav1.NamespaceAll).List(ctx, opts)
-	if err != nil {
-		return result, err
-	}
-
-	for _, pod := range pods.Items {
-		result.Items = append(
-			result.Items,
-			model.PodItem{
-				Name:      pod.Name,
-				Namespace: pod.Namespace,
-				Phase:     string(pod.Status.Phase),
-				NodeName:  pod.Spec.NodeName,
-			})
-	}
-	return result, nil
-}
-
 func (k *KubeAPI) ListEventsDynamicResource(ctx context.Context, req model.ListRequest) ([]unstructured.Unstructured, string, string, error) {
 	if err := req.Validate(); err != nil {
 		return nil, "", "", err
@@ -300,12 +274,12 @@ func (k *KubeAPI) TriggerCronjob(ctx context.Context, req model.TriggerCronjob) 
 		return "", err
 	}
 
-	apiResourceList, err := k.getResource(req.Server, req.APIResource)
+	apiResourceList, err := k.GetResource(req.Server, req.APIResource)
 	if err != nil {
 		return "", err
 	}
 
-	k.setResource(&req.APIResource, apiResourceList)
+	k.SetResource(&req.APIResource, apiResourceList)
 
 	cronJob, err := server.Typed.BatchV1().CronJobs(req.Namespace).Get(ctx, req.Name, metav1.GetOptions{})
 	if err != nil {
@@ -336,12 +310,12 @@ func (k *KubeAPI) ScaleResource(ctx context.Context, req model.ResourceOperation
 		return err
 	}
 
-	apiResourceList, err := k.getResource(req.Server, req.APIResource)
+	apiResourceList, err := k.GetResource(req.Server, req.APIResource)
 	if err != nil {
 		return err
 	}
 
-	k.setResource(&req.APIResource, apiResourceList)
+	k.SetResource(&req.APIResource, apiResourceList)
 	gvr := req.APIResource.GetGVR()
 	resource, err := server.Dynamic.Resource(gvr).
 		Namespace(req.Namespace).
@@ -370,12 +344,12 @@ func (k *KubeAPI) DeleteDynamicResources(ctx context.Context, req model.DeleteRe
 		return err
 	}
 
-	apiResourceList, err := k.getResource(req.Server, req.APIResource)
+	apiResourceList, err := k.GetResource(req.Server, req.APIResource)
 	if err != nil {
 		return err
 	}
 
-	k.setResource(&req.APIResource, apiResourceList)
+	k.SetResource(&req.APIResource, apiResourceList)
 	gvr := req.APIResource.GetGVR()
 	if req.APIResource.Namespaced {
 		for _, res := range req.Resources {
@@ -413,12 +387,12 @@ func (k *KubeAPI) NodeOperation(ctx context.Context, req model.NodeOperation) er
 	if err != nil {
 		return err
 	}
-	apiResourceList, err := k.getResource(req.Server, req.APIResource)
+	apiResourceList, err := k.GetResource(req.Server, req.APIResource)
 	if err != nil {
 		return err
 	}
 
-	k.setResource(&req.APIResource, apiResourceList)
+	k.SetResource(&req.APIResource, apiResourceList)
 	ri := server.Dynamic.Resource(req.APIResource.GetGVR())
 
 	payload := []struct {
@@ -465,7 +439,7 @@ func (k *KubeAPI) NodeDrain(ctx context.Context, req model.NodeDrain, onDelete f
 	return node, drain.RunNodeDrain(drainer, req.ResourceName)
 }
 
-func (k *KubeAPI) setResource(req *model.APIResource, apiResourceList *metav1.APIResourceList) {
+func (k *KubeAPI) SetResource(req *model.APIResource, apiResourceList *metav1.APIResourceList) {
 	for _, r := range apiResourceList.APIResources {
 		if r.Kind == req.Kind && r.SingularName == strings.ToLower(req.Kind) {
 			req.Resource = r.Name
@@ -473,7 +447,7 @@ func (k *KubeAPI) setResource(req *model.APIResource, apiResourceList *metav1.AP
 	}
 }
 
-func (k *KubeAPI) getResource(server string, req model.APIResource) (*metav1.APIResourceList, error) {
+func (k *KubeAPI) GetResource(server string, req model.APIResource) (*metav1.APIResourceList, error) {
 	s, err := k.getClient(server)
 	if err != nil {
 		return nil, err
@@ -511,11 +485,11 @@ func (k *KubeAPI) GetResourceInterface(server, ns string, resource *model.APIRes
 	if err != nil {
 		return nil, err
 	}
-	apiResourceList, err := k.getResource(server, *resource)
+	apiResourceList, err := k.GetResource(server, *resource)
 	if err != nil {
 		return nil, err
 	}
-	k.setResource(resource, apiResourceList)
+	k.SetResource(resource, apiResourceList)
 	gvr := resource.GetGVR()
 
 	var ri dynamic.ResourceInterface

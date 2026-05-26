@@ -12,8 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 )
 
 type Server struct {
@@ -78,13 +78,21 @@ func LoadTools(mcpServer *Server) *Server {
 		mcp.NewStructuredToolHandler(mcpServer.clusterVersion),
 	) // cluster_version
 	mcpServer.server.AddTool(
-		mcp.NewTool("filter_pods",
-			mcp.WithDescription("Get pods by field selector or label selector"),
-			mcp.WithInputSchema[model.PodFilter](),
-			mcp.WithOutputSchema[model.PodFilterResponse](),
+		mcp.NewTool("api_resources",
+			mcp.WithDescription("Get available api resources of the kubernetes cluster"),
+			mcp.WithInputSchema[model.PayloadRequest](),
+			mcp.WithOutputSchema[model.APIResourceResponse](),
 		),
-		mcp.NewStructuredToolHandler(mcpServer.filterpods),
-	) // filter_pods
+		mcp.NewStructuredToolHandler(mcpServer.apiResources),
+	) // api_resources
+	mcpServer.server.AddTool(
+		mcp.NewTool("list_resources",
+			mcp.WithDescription("Get the list of resources by field selector or label selector. Available resource is requested by api_resources tool. An example of resource key to list nodes: {'apiVersion':'v1','group':'','version':'v1','kind':'Node','namespaced':false,'resource':'nodes'}"),
+			mcp.WithInputSchema[model.ResourceFilter](),
+			mcp.WithOutputSchema[model.ResourceFilterResponse](),
+		),
+		mcp.NewStructuredToolHandler(mcpServer.listResources),
+	) // get_resources
 
 	return mcpServer
 }
@@ -106,11 +114,42 @@ func (s *Server) clusterVersion(ctx context.Context, request mcp.CallToolRequest
 	return cv, nil
 }
 
-func (s *Server) filterpods(ctx context.Context, request mcp.CallToolRequest, args model.PodFilter) (model.PodFilterResponse, error) {
-	slog.Debug("new tool call", "tool", "filter_pods", "args", args)
-	gpr := model.PodFilterResponse{}
+func (s *Server) apiResources(ctx context.Context, request mcp.CallToolRequest, args model.PayloadRequest) (model.APIResourceResponse, error) {
+	slog.Debug("new tool call", "tool", "api_resources", "args", args)
+	ar := model.APIResourceResponse{}
 	if err := args.Validate(); err != nil {
-		return gpr, err
+		return ar, err
+	}
+	apiResources, err := s.kapi.ListResources(args)
+	if err != nil {
+		return ar, err
+	}
+	ar.Items = apiResources
+	return ar, err
+}
+
+func (s *Server) listResources(ctx context.Context, request mcp.CallToolRequest, args model.ResourceFilter) (model.ResourceFilterResponse, error) {
+	slog.Debug("new tool call", "tool", "get_resources", "args", args)
+	resources := model.ResourceFilterResponse{}
+	if err := args.Validate(); err != nil {
+		return resources, err
+	}
+	kapi, err := s.kapi.GetClient(args.Server)
+	if err != nil {
+		return resources, err
+	}
+	apiResourceList, err := s.kapi.GetResource(args.Server, args.Resource)
+	if err != nil {
+		return resources, err
+	}
+	s.kapi.SetResource(&args.Resource, apiResourceList)
+	gvr := args.Resource.GetGVR()
+
+	var ri dynamic.ResourceInterface
+	if args.Resource.Namespaced {
+		ri = kapi.Dynamic.Resource(gvr).Namespace(args.Namespace)
+	} else {
+		ri = kapi.Dynamic.Resource(gvr)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
@@ -119,6 +158,15 @@ func (s *Server) filterpods(ctx context.Context, request mcp.CallToolRequest, ar
 		FieldSelector: args.FieldSelector,
 		LabelSelector: args.LabelSelector,
 	}
-	pods, err := s.kapi.FilterPods(ctx, args.Server, opts)
-	return pods, err
+	items, err := ri.List(ctx, opts)
+	if err != nil {
+		return resources, err
+	}
+	for _, o := range items.Items {
+		object := o.Object
+		// Remove managedFields
+		delete(object["metadata"].(map[string]any), "managedFields")
+		resources.Items = append(resources.Items, object)
+	}
+	return resources, nil
 }
