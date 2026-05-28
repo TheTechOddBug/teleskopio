@@ -81,11 +81,9 @@ func (k *KubeAPI) ListCustomResourceDefinitions(ctx context.Context, req model.P
 	return crdList, nil
 }
 
-func (k *KubeAPI) ListResources(req model.PayloadRequest) ([]model.APIResource, error) {
-	if err := req.Validate(); err != nil {
-		return nil, err
-	}
-	server, err := k.getClient(req.Server)
+// TODO filter here
+func (k *KubeAPI) ListResources(s string) ([]model.APIResource, error) {
+	server, err := k.getClient(s)
 	if err != nil {
 		return nil, err
 	}

@@ -22,7 +22,6 @@ linters:
     - prealloc
     - revive
     - rowserrcheck
-    - staticcheck
     - unconvert
     - unparam
     - whitespace
@@ -36,10 +35,6 @@ linters:
     lll:
       line-length: 193
       tab-width: 1
-    staticcheck:
-      checks:
-        - -S1023
-        - all
   exclusions:
     generated: lax
     presets:

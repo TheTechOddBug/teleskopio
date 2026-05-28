@@ -120,8 +120,10 @@ func (a *App) initServer(staticFiles embed.FS) error {
 			}
 			router.Use(mdlwr.MCPProtect())
 		}
-		mcp.LoadTools(
-			mcp.New(a.Config.Version, kapi).SetupRoutes(router),
+		mcp.LoadPrompts(
+			mcp.LoadTools(
+				mcp.New(a.Config.Version, kapi).SetupRoutes(router),
+			),
 		)
 	}
 

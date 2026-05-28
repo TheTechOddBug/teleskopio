@@ -28,7 +28,7 @@ func (r *Route) ListResources(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	result, err := r.kapi.ListResources(req)
+	result, err := r.kapi.ListResources(req.Server)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
