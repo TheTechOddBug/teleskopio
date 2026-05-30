@@ -41,7 +41,7 @@
 
 ### Configuration
 
-[teleskopio.github.io](https://teleskopio.github.io/configuration/#configuration)
+[teleskopio.github.io/configuration](https://teleskopio.github.io/configuration/#configuration)
 
 ### Full Readme
 

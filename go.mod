@@ -12,6 +12,7 @@ require (
 	github.com/lmittmann/tint v1.0.4
 	github.com/mark3labs/mcp-go v0.54.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/tidwall/gjson v1.19.0
 	golang.org/x/crypto v0.48.0
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.19.4
@@ -116,6 +117,8 @@ require (
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect

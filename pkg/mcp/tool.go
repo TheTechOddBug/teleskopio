@@ -2,12 +2,14 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"slices"
 
 	"teleskopio/pkg/model"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/tidwall/gjson"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 )
@@ -107,11 +109,51 @@ func (s *Server) listResources(ctx context.Context, _ mcp.CallToolRequest, args 
 			resources.Items = append(resources.Items, object)
 			continue
 		}
-		resources.Items = append(resources.Items, map[string]any{
-			"kind":      object["kind"],
-			"name":      object["metadata"].(map[string]any)["name"],
-			"namespace": object["metadata"].(map[string]any)["namespace"],
-		})
+		// We need to return short version of resource
+		switch args.Resource.Kind {
+		case "Pod":
+			resources.Items = append(resources.Items, remapPodToJSON(object))
+		case "Node":
+			resources.Items = append(resources.Items, remapNodeToJSON(object))
+		default:
+			resources.Items = append(resources.Items, remapOtherObjects(object))
+		}
 	}
 	return resources, nil
+}
+
+func remapOtherObjects(object map[string]any) map[string]any {
+	//nolint:errcheck
+	jsonString, _ := json.Marshal(object)
+	return map[string]any{
+		"kind":      gjson.Get(string(jsonString), "kind").String(),
+		"name":      gjson.Get(string(jsonString), "metadata.name").String(),
+		"namespace": gjson.Get(string(jsonString), "metadata.namespace").String(),
+		"labels":    gjson.Get(string(jsonString), "metadata.labels").Raw,
+	}
+}
+
+func remapNodeToJSON(object map[string]any) map[string]any {
+	//nolint:errcheck
+	jsonString, _ := json.Marshal(object)
+	return map[string]any{
+		"kind":           gjson.Get(string(jsonString), "kind").String(),
+		"name":           gjson.Get(string(jsonString), "metadata.name").String(),
+		"labels":         gjson.Get(string(jsonString), "metadata.labels").Raw,
+		"kubeletVersion": gjson.Get(string(jsonString), "status.nodeInfo.kubeletVersion").String(),
+		"conditions":     gjson.Get(string(jsonString), "status.conditions").Raw,
+	}
+}
+
+func remapPodToJSON(object map[string]any) map[string]any {
+	//nolint:errcheck
+	jsonString, _ := json.Marshal(object)
+	return map[string]any{
+		"kind":      gjson.Get(string(jsonString), "kind").String(),
+		"name":      gjson.Get(string(jsonString), "metadata.name").String(),
+		"namespace": gjson.Get(string(jsonString), "metadata.namespace").String(),
+		"nodeName":  gjson.Get(string(jsonString), "spec.nodeName").String(),
+		"labels":    gjson.Get(string(jsonString), "metadata.labels").Raw,
+		"status":    gjson.Get(string(jsonString), "status.phase").String(),
+	}
 }
