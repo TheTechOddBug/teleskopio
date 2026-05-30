@@ -4,10 +4,12 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
+//nolint:staticcheck
 type PayloadRequest struct {
 	Server string `json:"server,required" jsonschema_description:"the kubernetes cluster endpoint"`
 }
 
+//nolint:staticcheck
 type APIResourceRequest struct {
 	Server string `json:"server,required" jsonschema_description:"the kubernetes cluster endpoint"`
 	Kind   string `json:"kind" jsonschema_description:"filter data by the kind of resource e.g. Pod, Event, Node. if kind is empty all resources will be returned"`
@@ -19,6 +21,7 @@ func (p *APIResourceRequest) Validate() error {
 	)
 }
 
+//nolint:staticcheck
 type ResourceFilter struct {
 	Server        string      `json:"server,required" jsonschema_description:"the kubernetes cluster endpoint"`
 	Namespace     string      `json:"namespace" jsonschema_description:"the namespace of the resource"`
@@ -34,18 +37,22 @@ func (p *ResourceFilter) Validate() error {
 	)
 }
 
+//nolint:staticcheck
 type APIResourceResponse struct {
 	Items []APIResource `json:"items,required" jsonschema_description:"the list of api resources of cluster"`
 }
 
+//nolint:staticcheck
 type ResourceFilterResponse struct {
 	Items []map[string]any `json:"items,required" jsonschema_description:"the list of requested resource"`
 }
 
+//nolint:staticcheck
 type ClusterVersion struct {
 	Version string `json:"version" jsonschema_description:"the kubernetes cluster version"`
 }
 
+//nolint:staticcheck
 type ClusterResponse struct {
 	Server string `json:"server" jsonschema_description:"the kubernetes cluster endpoint"`
 }

@@ -8,13 +8,14 @@ import (
 	"io"
 	"os"
 	"strings"
-	"teleskopio/pkg/config"
-	"teleskopio/pkg/model"
 	"time"
 
-	batchv1 "k8s.io/api/batch/v1"
+	"teleskopio/pkg/config"
+	"teleskopio/pkg/model"
+
 	"k8s.io/kubectl/pkg/drain"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 

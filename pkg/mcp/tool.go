@@ -26,6 +26,7 @@ func LoadTools(mcpServer *Server) *Server {
 		),
 		mcp.NewStructuredToolHandler(mcpServer.apiResources),
 	) // api_resources
+	//nolint:lll
 	mcpServer.server.AddTool(
 		mcp.NewTool("list_resources",
 			mcp.WithDescription("Get the list of resources by field selector or label selector. Available resource is requested by api_resources tool. An example of resource key to list nodes: {'apiVersion':'v1','group':'','version':'v1','kind':'Node','namespaced':false,'resource':'nodes'}"),

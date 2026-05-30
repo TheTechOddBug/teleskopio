@@ -35,6 +35,7 @@ func (s Server) podsDiagnosis(ctx context.Context, request mcp.GetPromptRequest)
 	if server == "" {
 		return nil, fmt.Errorf("server are required")
 	}
+	//nolint:lll
 	clusterDiagnosisPrompt := `
 You're an SRE engineer. Follow these steps to investigate pods issues and generate report for the user:
 
