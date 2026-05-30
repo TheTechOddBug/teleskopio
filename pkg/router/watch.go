@@ -27,7 +27,7 @@ func (r *Route) WatchDynamicResource(c *gin.Context) {
 		return
 	}
 	watcherKey := fmt.Sprintf("%s-%s", req.APIResource.Kind, req.Server)
-	watch, err := ri.Watch(context.TODO(), metav1.ListOptions{ResourceVersion: req.APIResource.ResourceVersion})
+	watch, err := ri.Watch(context.Background(), metav1.ListOptions{ResourceVersion: req.APIResource.ResourceVersion})
 	if err != nil {
 		slog.Error("watcher", "err", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -42,21 +42,24 @@ func (r *Route) WatchDynamicResource(c *gin.Context) {
 			switch event.Type {
 			case w.Added, w.Modified:
 				slog.Debug("message received", "gvr", gvr.String(), "watchKey", watcherKey, "type", event.Type)
-				payload, _ := json.Marshal(map[string]interface{}{
+				payload, _ := json.Marshal(map[string]any{
 					"event":   fmt.Sprintf("%s-%s-updated", req.APIResource.Kind, req.Server),
 					"payload": event.Object,
 				})
 				r.hub.Broadcast(payload)
 			case w.Deleted:
 				slog.Debug("message received", "gvr", gvr.String(), "watchKey", watcherKey, "type", event.Type)
-				payload, _ := json.Marshal(map[string]interface{}{
+				payload, _ := json.Marshal(map[string]any{
 					"event":   fmt.Sprintf("%s-%s-deleted", req.APIResource.Kind, req.Server),
 					"payload": event.Object,
 				})
 				r.hub.Broadcast(payload)
 			case w.Error:
-				slog.Error("watching error", "gvr", gvr.String(), "watchKey", watcherKey, "error", event.Object.DeepCopyObject().GetObjectKind())
+				if status, ok := event.Object.(*metav1.Status); ok {
+					slog.Error("watching error", "gvr", gvr.String(), "watchKey", watcherKey, "code", status.Code, "reason", status.Reason, "msg", status.Message)
+				}
 				r.watchers.Delete(watcherKey)
+				return
 			}
 		}
 	}()
@@ -91,7 +94,7 @@ func (r *Route) WatchEventsDynamicResource(c *gin.Context) {
 		fieldSelector = fmt.Sprintf("regarding.uid=%s", req.UID)
 	}
 	watchOptions.FieldSelector = fieldSelector
-	watch, err := ri.Watch(context.TODO(), watchOptions)
+	watch, err := ri.Watch(context.Background(), watchOptions)
 	if err != nil {
 		slog.Error("watcher", "err", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -111,8 +114,11 @@ func (r *Route) WatchEventsDynamicResource(c *gin.Context) {
 				})
 				r.hub.Broadcast(payload)
 			case w.Error:
-				slog.Error("watching error", "gvr", gvr.String(), "watchKey", watcherKey, "error", event.Object.DeepCopyObject().GetObjectKind())
+				if status, ok := event.Object.(*metav1.Status); ok {
+					slog.Error("watching error", "gvr", gvr.String(), "watchKey", watcherKey, "code", status.Code, "reason", status.Reason, "msg", status.Message)
+				}
 				r.watchers.Delete(watcherKey)
+				return
 			}
 		}
 	}()

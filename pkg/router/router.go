@@ -172,6 +172,7 @@ func (r *Route) CleanUp(c *gin.Context) {
 		if strings.Contains(k, req.Server) {
 			slog.Debug("stop watcher", "k", k)
 			v.Stop()
+			r.watchers.Delete(k)
 		}
 		return true
 	})
@@ -201,7 +202,7 @@ func (r *Route) Login(c *gin.Context) {
 		return
 	}
 
-	exp := time.Now().Add(1 * time.Hour)
+	exp := time.Now().Add(*r.cfg.JWTTokenExpire)
 	claims := &model.Claims{
 		Username: u.Username,
 		Role:     u.Role,
