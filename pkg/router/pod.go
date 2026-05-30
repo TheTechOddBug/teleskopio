@@ -7,8 +7,9 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"teleskopio/pkg/model"
 	"time"
+
+	"teleskopio/pkg/model"
 
 	"github.com/gin-gonic/gin"
 	corev1 "k8s.io/api/core/v1"

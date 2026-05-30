@@ -34,6 +34,7 @@ func GetConfigPath(configPathString string) string {
 		return "./config.yaml"
 	}
 	defaultConfigPath := filepath.Join(os.Getenv("HOME"), ".config/teleskopio/config.yaml")
+	//nolint:gosec
 	if _, err := os.Stat(defaultConfigPath); err == nil {
 		return defaultConfigPath
 	}

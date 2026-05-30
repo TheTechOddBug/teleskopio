@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"slices"
+
 	"teleskopio/pkg/model"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -39,13 +40,13 @@ func LoadTools(mcpServer *Server) *Server {
 	return mcpServer
 }
 
-func (s *Server) clusters(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *Server) clusters(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	slog.Debug("new tool call", "tool", "clusters")
 	resp, err := mcp.NewToolResultJSON(map[string]any{"clusters": s.kapi.GetClusters()})
 	return resp, err
 }
 
-func (s *Server) apiResources(_ context.Context, request mcp.CallToolRequest, args model.APIResourceRequest) (model.APIResourceResponse, error) {
+func (s *Server) apiResources(_ context.Context, _ mcp.CallToolRequest, args model.APIResourceRequest) (model.APIResourceResponse, error) {
 	slog.Debug("new tool call", "tool", "api_resources", "args", args)
 	ar := model.APIResourceResponse{}
 	if err := args.Validate(); err != nil {

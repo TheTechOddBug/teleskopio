@@ -21,7 +21,7 @@ func (p *APIResourceRequest) Validate() error {
 	)
 }
 
-//nolint:staticcheck
+//nolint:staticcheck,lll
 type ResourceFilter struct {
 	Server        string      `json:"server,required" jsonschema_description:"the kubernetes cluster endpoint"`
 	Namespace     string      `json:"namespace" jsonschema_description:"the namespace of the resource"`

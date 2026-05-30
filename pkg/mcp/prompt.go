@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+
 	"teleskopio/pkg/kubeapi"
 
 	"github.com/mark3labs/mcp-go/mcp"

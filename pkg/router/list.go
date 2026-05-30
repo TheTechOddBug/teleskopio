@@ -3,6 +3,7 @@ package router
 import (
 	"log/slog"
 	"net/http"
+
 	"teleskopio/pkg/model"
 
 	"github.com/gin-gonic/gin"
