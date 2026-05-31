@@ -88,7 +88,7 @@ type Users struct {
 	Users map[string]User
 }
 
-//nolint:gocognit
+//nolint:gocognit,funlen
 func Parse(configPath string) (Config, []*Cluster, Users, error) {
 	var cfg Config
 	clusters := []*Cluster{}
@@ -213,7 +213,7 @@ func Parse(configPath string) (Config, []*Cluster, Users, error) {
 		users.Users[u.Username] = u
 	}
 	if cfg.JWTTokenExpire == nil {
-		defaultDuration := time.Duration(time.Hour)
+		defaultDuration := time.Hour
 		slog.Info("empty jwt token expire duration set default", "value", defaultDuration.String())
 		cfg.JWTTokenExpire = &defaultDuration
 	}
