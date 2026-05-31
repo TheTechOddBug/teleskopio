@@ -17,7 +17,7 @@ export async function call<T = any>(action: string, payload?: InvokePayload): Pr
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: token ? token : '',
+        Token: token ? token : '',
       },
       body: JSON.stringify(request),
     });
@@ -37,8 +37,26 @@ export async function call<T = any>(action: string, payload?: InvokePayload): Pr
   const res = await fetch(`/api/${action}`, {
     headers: {
       'Content-Type': 'application/json',
-      Authorization: token ? token : '',
+      Token: token ? token : '',
     },
   });
+  if (res.status === 401) {
+    const err = await res.json();
+    throw new Error(`Unauthorized request ${err.message}`);
+  }
   return res.json();
+}
+
+export async function cleanup() {
+  const config = getLocalKeyObject('currentCluster');
+  const token = localStorage.getItem('token');
+  const server = config.server;
+  await fetch(`/api/cleanup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Token: token ? token : '',
+    },
+    body: JSON.stringify({ server }),
+  });
 }

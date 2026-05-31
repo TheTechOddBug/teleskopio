@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	_ "embed"
 
@@ -34,6 +35,7 @@ func GetConfigPath(configPathString string) string {
 		return "./config.yaml"
 	}
 	defaultConfigPath := filepath.Join(os.Getenv("HOME"), ".config/teleskopio/config.yaml")
+	//nolint:gosec
 	if _, err := os.Stat(defaultConfigPath); err == nil {
 		return defaultConfigPath
 	}
@@ -46,15 +48,28 @@ type User struct {
 	Role     string `yaml:"role"`
 }
 
+type MCP struct {
+	Enabled      bool   `yaml:"enabled"`
+	APIKey       string `yaml:"api_key"`
+	APIKeyHeader string `yaml:"api_key_header"`
+	Cors         struct {
+		Origin  string   `yaml:"origin"`
+		Headers []string `yaml:"headers"`
+	} `yaml:"cors"`
+}
+
 type Config struct {
-	LogColor     bool   `yaml:"log_color"`
-	LogJSON      bool   `yaml:"log_json"`
-	LogLevel     string `yaml:"log_level"`
-	ServerHTTP   string `yaml:"server_http"`
-	AuthDisabled bool   `yaml:"auth_disabled"`
-	JWTKey       string `yaml:"jwt_key"`
-	Users        []User `yaml:"users"`
-	Kube         struct {
+	LogColor       bool           `yaml:"log_color"`
+	LogJSON        bool           `yaml:"log_json"`
+	LogLevel       string         `yaml:"log_level"`
+	ServerHTTP     string         `yaml:"server_http"`
+	Protocol       string         `yaml:"protocol"`
+	AuthDisabled   bool           `yaml:"auth_disabled"`
+	JWTKey         string         `yaml:"jwt_key"`
+	JWTTokenExpire *time.Duration `yaml:"jwt_token_expire"`
+	Users          []User         `yaml:"users"`
+	MCP            MCP            `yaml:"mcp"`
+	Kube           struct {
 		APIRequestTimeout string           `yaml:"api_request_timeout"`
 		Configs           []map[string]any `yaml:"configs"`
 	} `yaml:"kube"`
@@ -73,7 +88,7 @@ type Users struct {
 	Users map[string]User
 }
 
-//nolint:gocognit
+//nolint:gocognit,funlen
 func Parse(configPath string) (Config, []*Cluster, Users, error) {
 	var cfg Config
 	clusters := []*Cluster{}
@@ -165,9 +180,9 @@ func Parse(configPath string) (Config, []*Cluster, Users, error) {
 	}
 
 	if _, err := os.Open(sapath); errors.Is(err, os.ErrNotExist) {
-		slog.Info("we're not in cluster", "sa", sapath)
+		slog.Info("we're not in the cluster", "sa", sapath)
 	} else {
-		slog.Info("looks like we're in kubernetes cluster, let's auth with SA", "sa", sapath)
+		slog.Info("looks like we're in the kubernetes cluster, let's auth with SA", "sa", sapath)
 		inclusterconfig, err := rest.InClusterConfig()
 		if err != nil {
 			slog.Error("cant auth with SA kubernetes cluster", "sa", sapath)
@@ -196,6 +211,14 @@ func Parse(configPath string) (Config, []*Cluster, Users, error) {
 
 	for _, u := range cfg.Users {
 		users.Users[u.Username] = u
+	}
+	if cfg.JWTTokenExpire == nil {
+		defaultDuration := time.Hour
+		slog.Info("empty jwt token expire duration set default", "value", defaultDuration.String())
+		cfg.JWTTokenExpire = &defaultDuration
+	}
+	if cfg.Protocol == "" {
+		cfg.Protocol = "http"
 	}
 	return cfg, clusters, users, nil
 }

@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"teleskopio/pkg/config"
+	"teleskopio/pkg/kubeapi"
+	"teleskopio/pkg/mcp"
 	"teleskopio/pkg/middleware"
 	httpRouter "teleskopio/pkg/router"
 	webSocket "teleskopio/pkg/socket"
@@ -92,6 +94,7 @@ func initLogger(cfg *config.Config) {
 	slog.Info("set loglevel", "level", level)
 }
 
+//nolint:funlen
 func (a *App) initServer(staticFiles embed.FS) error {
 	slog.Info("initialize web server", "addr", a.Config.ServerHTTP)
 	gin.SetMode(gin.ReleaseMode)
@@ -99,12 +102,31 @@ func (a *App) initServer(staticFiles embed.FS) error {
 	mdlwr := middleware.New(a.Config)
 	router.Use(mdlwr.Logger())
 	router.Use(gin.Recovery())
+	router.Use(mdlwr.CORS())
 	hub := webSocket.NewHub()
 	go hub.Run()
-	r, err := httpRouter.New(hub, router, a.Config, a.Clusters, a.Users)
+
+	kapi := kubeapi.New(a.Clusters)
+	r, err := httpRouter.New(hub, a.Config, kapi, a.Users)
 	if err != nil {
 		return err
 	}
+	if a.Config.MCP.Enabled {
+		slog.Info("mcp enabled", "api_key", len(a.Config.MCP.APIKey))
+		if a.Config.MCP.APIKey != "" {
+			if a.Config.MCP.APIKeyHeader == "" {
+				a.Config.MCP.APIKeyHeader = "X-MCP"
+				slog.Warn("mcp.api_key_header is empty set default", "default", a.Config.MCP.APIKeyHeader)
+			}
+			router.Use(mdlwr.MCPProtect())
+		}
+		mcp.LoadPrompts(
+			mcp.LoadTools(
+				mcp.New(*a.Config, kapi).SetupRoutes(router),
+			),
+		)
+	}
+
 	indexfs, err := static.EmbedFolder(staticFiles, "dist")
 	if err != nil {
 		return err
@@ -123,7 +145,7 @@ func (a *App) initServer(staticFiles embed.FS) error {
 		})
 	}
 	router.NoRoute(func(c *gin.Context) {
-		slog.Debug("hit no route", "request uri", c.Request.RequestURI)
+		slog.Debug("hit no route", "request uri", c.Request.RequestURI, "method", c.Request.Method)
 		if strings.HasPrefix(c.Request.URL.Path, "/yaml") {
 			re := regexp.MustCompile(`^(/[^/]+){3}`)
 			newPath := re.ReplaceAllString(c.Request.URL.Path, "")
@@ -169,6 +191,7 @@ func (a *App) initServer(staticFiles embed.FS) error {
 		c.JSON(http.StatusOK, gin.H{"message": a.Config.AuthDisabled})
 	})
 	router.POST("/api/login", r.Login)
+	router.POST("/api/cleanup", r.CleanUp)
 	auth := router.Group("/api")
 	auth.Use(mdlwr.Auth())
 	auth.GET("/lookup_configs", r.LookupConfigs)

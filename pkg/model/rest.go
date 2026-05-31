@@ -1,34 +1,28 @@
-package router
+//nolint:staticcheck
+package model
 
 import (
-	"teleskopio/pkg/config"
-	webSocket "teleskopio/pkg/socket"
-
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	w "k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/informers"
+	"github.com/golang-jwt/jwt/v5"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+type Claims struct {
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	jwt.RegisteredClaims
+}
 
 type Cluster struct {
 	Server string `json:"server"`
 }
 
-type Payload struct {
-	Server string `json:"server"`
-}
-
-func (p *Payload) Validate() error {
-	return validation.ValidateStruct(p,
-		validation.Field(&p.Server, validation.Required),
-	)
-}
-
-type creds struct {
+type Creds struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-func (c *creds) Validate() error {
+func (c *Creds) Validate() error {
 	return validation.ValidateStruct(c,
 		validation.Field(&c.Username, validation.Required),
 		validation.Field(&c.Password, validation.Required),
@@ -36,13 +30,13 @@ func (c *creds) Validate() error {
 }
 
 type APIResource struct {
-	APIVersion      string `json:"apiVersion"`
-	Group           string `json:"group"`
-	Version         string `json:"version"`
-	Kind            string `json:"kind"`
-	Namespaced      bool   `json:"namespaced"`
-	Resource        string `json:"resource"`
-	ResourceVersion string `json:"resource_version"`
+	APIVersion      string `json:"apiVersion" jsonschema_description:"resource api version"`
+	Group           string `json:"group" jsonschema_description:"resource group"`
+	Version         string `json:"version" jsonschema_description:"resource version"`
+	Kind            string `json:"kind" jsonschema_description:"resource kind"`
+	Namespaced      bool   `json:"namespaced" jsonschema_description:"resource namespaced"`
+	Resource        string `json:"resource" jsonschema_description:"resource name"`
+	ResourceVersion string `json:"resource_version" jsonschema_description:"resource version"`
 }
 
 func (a *APIResource) Validate() error {
@@ -51,6 +45,14 @@ func (a *APIResource) Validate() error {
 		validation.Field(&a.Version, validation.Required),
 		validation.Field(&a.Resource, validation.Required),
 	)
+}
+
+func (a *APIResource) GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    a.Group,
+		Version:  a.Version,
+		Resource: a.Resource,
+	}
 }
 
 type ListRequest struct {
@@ -93,12 +95,33 @@ type GetRequest struct {
 	APIResource APIResource `json:"apiResource"`
 }
 
+func (g *GetRequest) Validate() error {
+	if err := validation.ValidateStruct(g,
+		validation.Field(&g.Server, validation.Required),
+	); err != nil {
+		return err
+	}
+	if err := g.APIResource.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
 type PodLogRequest struct {
 	Server    string `json:"server"`
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 	Container string `json:"container"`
 	TailLines *int64 `json:"tail_lines"`
+}
+
+func (p *PodLogRequest) Validate() error {
+	return validation.ValidateStruct(p,
+		validation.Field(&p.Server, validation.Required),
+		validation.Field(&p.Name, validation.Required),
+		validation.Field(&p.Namespace, validation.Required),
+		validation.Field(&p.Container, validation.Required),
+	)
 }
 
 type DeleteRequest struct {
@@ -111,11 +134,28 @@ type DeleteRequest struct {
 	APIResource APIResource `json:"apiResource"`
 }
 
-type CreateRequest struct {
+func (d *DeleteRequest) Validate() error {
+	return validation.ValidateStruct(d,
+		validation.Field(&d.Server, validation.Required),
+		validation.Field(&d.Resources, validation.Required),
+	)
+}
+
+type ObjectRequest struct {
 	Server    string `json:"server"`
 	Namespace string `json:"namespace"`
 
 	Yaml string `json:"yaml"`
+}
+
+func (o *ObjectRequest) Validate() error {
+	if err := validation.ValidateStruct(o,
+		validation.Field(&o.Server, validation.Required),
+		validation.Field(&o.Yaml, validation.Required),
+	); err != nil {
+		return err
+	}
+	return nil
 }
 
 type NodeOperation struct {
@@ -156,6 +196,14 @@ type TriggerCronjob struct {
 	APIResource APIResource `json:"apiResource"`
 }
 
+func (t *TriggerCronjob) Validate() error {
+	return validation.ValidateStruct(t,
+		validation.Field(&t.Server, validation.Required),
+		validation.Field(&t.Name, validation.Required),
+		validation.Field(&t.Namespace, validation.Required),
+	)
+}
+
 type ResourceOperation struct {
 	Server    string `json:"server"`
 	Name      string `json:"name"`
@@ -165,14 +213,10 @@ type ResourceOperation struct {
 	APIResource APIResource `json:"apiResource"`
 }
 
-type Route struct {
-	cfg      *config.Config
-	clusters []*config.Cluster
-	users    *config.Users
-	hub      *webSocket.Hub
-	// TODO
-	// Add mutex
-	watchers        map[string]w.Interface
-	helmWathers     map[string]informers.SharedInformerFactory
-	podLogsWatchers map[string]chan (bool)
+func (r *ResourceOperation) Validate() error {
+	return validation.ValidateStruct(r,
+		validation.Field(&r.Server, validation.Required),
+		validation.Field(&r.Name, validation.Required),
+		validation.Field(&r.Namespace, validation.Required),
+	)
 }
