@@ -5,10 +5,7 @@
 		</a>
 	</div>
 	<div align="center">
-	  <a href="https://teleskopio.github.io">teleskopio</a>
-	</div>
-	<div aligh="center">
-		<p>lightweight kubernetes web client.</p>
+	  <p><a href="https://teleskopio.github.io">teleskopio</a> lightweight kubernetes web client.</p>
 	</div>
 </p>
 
@@ -16,7 +13,6 @@
 	<img src="assets/preview-light.png" alt="teleskopio lightweight kubernetes web client" width="100%" />
 	<img src="assets/preview-dark.png" alt="teleskopio lightweight kubernetes web client" width="100%" />
 </div>
-
 
 #### features
 
