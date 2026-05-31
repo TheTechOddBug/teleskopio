@@ -43,7 +43,7 @@ teleskopio is a lightweight kubernetes web client.
 - Air-gapped environments ready. No external requests.
 - [MCP server](https://teleskopio.github.io/blog/mcp-server)
 
-### install
+#### install
 
 There are few ways to install teleskopio.
 
@@ -52,6 +52,6 @@ There are few ways to install teleskopio.
 - [Docker](https://teleskopio.github.io/install/#docker-2)
 - [Helm](https://teleskopio.github.io/install/#helm-2)
 
-### configuration
+#### configuration
 
 [teleskopio.github.io/configuration](https://teleskopio.github.io/configuration/#configuration)
