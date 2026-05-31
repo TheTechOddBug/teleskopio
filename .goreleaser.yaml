@@ -28,7 +28,7 @@ homebrew_casks:
     directory: Casks
     caveats: "teleskopio --config=config.yaml"
     homepage: "https://teleskopio.github.io/"
-    description: "teleskopio is an open-source small and beautiful Web Kubernetes client."
+    description: "teleskopio lightweight kubernetes web client."
     skip_upload: false
     commit_author:
       name: roman-kiselenko
