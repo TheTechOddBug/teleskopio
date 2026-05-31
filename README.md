@@ -1,18 +1,14 @@
-<div align="center">
+<p>
   <a href="https://teleskopio.github.io">
     <img src="assets/icon.png" alt="teleskopio lightweight kubernetes web client" width="120" height="120" />
   </a>
-</div>
-
-<div align="center">
-  <a href="https://teleskopio.github.io">teleskopio</a>
-</div>
-
-<div aligh="center">
-	<p width="100%">
-		teleskopio is a lightweight kubernetes web client.
-	</p>
-</div>
+	<div align="center">
+	  <a href="https://teleskopio.github.io">teleskopio</a>
+	</div>
+	<div aligh="center">
+			teleskopio is a lightweight kubernetes web client.
+	</div>
+</p>
 
 <div aligh="center">
 	<img src="assets/preview-light.png" alt="teleskopio lightweight kubernetes web client" width="100%" />
